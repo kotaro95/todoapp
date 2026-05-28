@@ -2,6 +2,7 @@ package main
 
 import (
 	"html/template"
+	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
@@ -26,6 +27,33 @@ func topPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func enterRoom(w http.ResponseWriter, r *http.Request) {
+	roomID := r.URL.Query().Get("room_id")
+	password := r.URL.Query().Get("password")
+
+	var dbPassword string
+	err := conn.QueryRow("SELECT COALESCE(password, '') FROM rooms WHERE room_id = ?", roomID).Scan(&dbPassword)
+	
+	if err != sql.ErrNoRows {
+		_,err = conn.Exec("INSERT INTO rooms (room_id, password) VALUES (?, ?)", roomID, password)
+		if err != nil {
+			log.Printf("DB error: %v\n", err)
+			http.Error(w,"データベースエラーが発生しました", http.StatusInternalServerError)
+			return
+		}
+	}else if err == nil {
+		log.Printf("DB error: %s\n", roomID)
+		http.Error(w,"データベースエラーが発生しました", http.StatusInternalServerError)
+		return
+	}else{
+		if dbPassword != "" && dbPassword != password {
+			log.Printf("Incorrect password for room %s", roomID)
+			http.Error(w,"パスワードが間違っています", http.StatusInternalServerError)
+			return
+		}
+	}
+	http.Redirect(w, r, "/room/?room_id="+roomID, http.StatusSeeOther)
+}
 
 type TaskView struct {
 	ID         int

@@ -30,6 +30,17 @@ func Connect() (*sql.DB, error) {
 		return nil, err
 	}
 
+	roomsTableSQL := `
+	CREATE TABLE IF NOT EXISTS rooms (
+		room_id VARCHAR(255) PRIMARY KEY,
+		password VARCHAR(255)
+	);`
+
+	_, err = db.Exec(roomsTableSQL)
+	if err != nil {
+		return nil, err
+	}
+
 	todoTableSQL := `
 	CREATE TABLE IF NOT EXISTS tasks (
 		id INT AUTO_INCREMENT PRIMARY KEY,
